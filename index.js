@@ -1,9 +1,9 @@
 const store = {
   items: [
-    { id: cuid(), name: 'apples', checked: false },
-    { id: cuid(), name: 'oranges', checked: false },
-    { id: cuid(), name: 'milk', checked: true },
-    { id: cuid(), name: 'bread', checked: false }
+    { id: cuid(), name: 'apples', checked: false, edit: false },
+    { id: cuid(), name: 'oranges', checked: false, edit: false },
+    { id: cuid(), name: 'milk', checked: true, edit: false },
+    { id: cuid(), name: 'bread', checked: false, edit: false }
   ],
   hideCheckedItems: false
 };
@@ -18,10 +18,18 @@ const generateItemElement = function (item) {
 
   return `
     <li class='js-item-element' data-item-id='${item.id}'>
-      ${itemTitle}
+      ${!item.edit ? itemTitle : `
+      <form class="js-item-form">
+        <input class="js-item-name-entry" name="title" type="text" value="${item.name}" required/>
+        <input type="submit"/>
+      </form>
+      `}
       <div class='shopping-item-controls'>
         <button class='shopping-item-toggle js-item-toggle'>
           <span class='button-label'>check</span>
+        </button>
+        <button class='shopping-item-edit js-item-edit'>
+          <span class='button-label'>${item.edit ? 'cancel' : 'edit'}</span>
         </button>
         <button class='shopping-item-delete js-item-delete'>
           <span class='button-label'>delete</span>
@@ -63,7 +71,7 @@ const render = function () {
 };
 
 const addItemToShoppingList = function (itemName) {
-  store.items.push({ id: cuid(), name: itemName, checked: false });
+  store.items.push({ id: cuid(), name: itemName, checked: false, edit: false });
 };
 
 const handleNewItemSubmit = function () {
@@ -89,12 +97,40 @@ const handleItemCheckClicked = function () {
   });
 };
 
-const getItemIdFromElement = function (item) {
+const getItemIdFromElement = (item) => {
   return $(item)
     .closest('.js-item-element')
     .data('item-id');
 };
 
+const editItemName = (id, name) => {
+  const foundItem = store.items.find(item => item.id === id);
+  foundItem.name = name;
+  foundItem.edit = false;
+};
+
+const handleItemEditClicked = () => {
+  $('.js-shopping-list').on('click', '.js-item-edit', event => {
+    const id = getItemIdFromElement(event.currentTarget);
+    toggleItemEdit(id);
+    render();
+  });
+};
+
+const toggleItemEdit = (id) => {
+  const foundItem = store.items.find(item => item.id === id);
+  foundItem.edit = !foundItem.edit;
+};
+
+const handleItemEditSubmit = () => {
+  $('.js-shopping-list').on('submit', '.js-item-form', event => {
+    event.preventDefault();
+    const id = getItemIdFromElement(event.currentTarget);
+    const newItemName = $('.js-item-name-entry').val();
+    editItemName(id, newItemName);
+    render();
+  });
+};
 /**
  * Responsible for deleting a list item.
  * @param {string} id 
@@ -158,6 +194,8 @@ const handleShoppingList = function () {
   render();
   handleNewItemSubmit();
   handleItemCheckClicked();
+  handleItemEditClicked();
+  handleItemEditSubmit();
   handleDeleteItemClicked();
   handleToggleFilterClick();
 };
